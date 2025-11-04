@@ -1,0 +1,46 @@
+# Trading Platform Configuration
+# Copy this to config.toml and adjust paths as needed
+
+[server]
+# Address to bind the gRPC server
+bind_address = "0.0.0.0:50051"
+
+# Enable gRPC-Web for browser clients
+enable_grpc_web = true
+
+# Enable CORS for browser clients
+enable_cors = true
+
+# Maximum concurrent connections
+max_connections = 1000
+
+# Request timeout in seconds
+request_timeout_secs = 30
+
+[matching_engine]
+# TCP address of the matching engine gateway
+# Make sure me_server is running first!
+gateway_address = "127.0.0.1:8080"
+
+# Connection pool size (number of TCP connections)
+pool_size = 10
+
+# Connection timeout in milliseconds
+connect_timeout_ms = 5000
+
+# Read timeout in milliseconds
+read_timeout_ms = 10000
+
+# Enable connection keep-alive
+keepalive = true
+
+[monte_carlo]
+# Path to the Monte Carlo shared library
+library_path = "../../../cpp-workspace/MonteCarloLib/lib/build/libmcoptions.so"
+
+# Default simulation parameters
+default_simulations = 10000
+default_steps = 252
+default_antithetic = true
+default_control_variates = false
+default_stratified_sampling = false

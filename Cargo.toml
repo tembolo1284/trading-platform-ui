@@ -1,0 +1,48 @@
+[workspace]
+members = [
+    "server",
+    "shared",
+    # "frontend",  # Uncomment when we build the frontend
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# gRPC
+tonic = "0.11"
+tonic-web = "0.11"
+prost = "0.12"
+prost-types = "0.12"
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# HTTP/Tower middleware
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+hyper = "1.0"
+http = "1.0"
+
+# Configuration
+config = "0.14"
+
+# FFI
+libc = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
