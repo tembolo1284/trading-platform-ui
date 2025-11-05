@@ -18,6 +18,3 @@ pub mod pricing {
 
 // Re-export commonly used types
 pub use common::Timestamp;
-
-pub use trading::trading_service_server::{TradingService, TradingServiceServer};
-pub use pricing::pricing_service_server::{PricingService, PricingServiceServer};

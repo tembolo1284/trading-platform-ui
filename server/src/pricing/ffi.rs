@@ -19,6 +19,7 @@ extern "C" {
     pub fn mco_context_set_antithetic(ctx: *mut mco_context_t, enabled: c_int);
     pub fn mco_context_set_control_variates(ctx: *mut mco_context_t, enabled: c_int);
     pub fn mco_context_set_stratified_sampling(ctx: *mut mco_context_t, enabled: c_int);
+    #[allow(dead_code)]
     pub fn mco_context_set_importance_sampling(
         ctx: *mut mco_context_t,
         enabled: c_int,

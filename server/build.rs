@@ -25,7 +25,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed={}/libmcoptions.so", lib_dir);
     println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir);
     
-    println!("cargo:warning=Linking libmcoptions.so from: {}", lib_dir);
-    
     Ok(())
 }
