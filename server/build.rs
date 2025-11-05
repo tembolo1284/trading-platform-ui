@@ -1,7 +1,5 @@
-use std::path::PathBuf;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);  // ← ADD THIS LINE
+    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);  //
     
     // Compile all protobuf files
     tonic_build::configure()
