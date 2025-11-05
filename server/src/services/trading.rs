@@ -4,7 +4,7 @@ use crate::proto::{
     trading::{
         trading_service_server::TradingService, CancelRequest, CancelResponse,
         ExecutionReport, OrderBookRequest, OrderBookSnapshot, OrderRequest, OrderResponse,
-        OrderStatusRequest, OrderStatusResponse, PriceLevel, StreamRequest, TradeReport,
+        OrderStatusRequest, OrderStatusResponse, StreamRequest, TradeReport,
     },
     Timestamp,
 };
@@ -42,11 +42,6 @@ impl TradingServiceImpl {
     /// Convert price from dollars to cents (fixed-point)
     fn price_to_cents(price: f64) -> u64 {
         (price * 100.0).round() as u64
-    }
-    
-    /// Convert price from cents to dollars
-    fn price_to_dollars(cents: u64) -> f64 {
-        cents as f64 / 100.0
     }
 }
 

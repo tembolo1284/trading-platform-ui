@@ -7,7 +7,7 @@ use crate::proto::pricing::{
 use std::sync::Arc;
 use std::time::Instant;
 use tonic::{Request, Response, Status};
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 /// Pricing service implementation
 #[derive(Clone)]

@@ -234,6 +234,7 @@ impl CancelOrderMessage {
 
 /// Order Acknowledgement
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct OrderAckMessage {
     pub client_order_id: u64,
     pub exchange_order_id: u64,
@@ -261,6 +262,7 @@ impl OrderAckMessage {
 
 /// Order Reject
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct OrderRejectMessage {
     pub client_order_id: u64,
     pub user_id: u64,
@@ -306,6 +308,7 @@ impl OrderRejectMessage {
 
 /// Execution Report
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ExecutionMessage {
     pub symbol: String,
     pub client_order_id: u64,

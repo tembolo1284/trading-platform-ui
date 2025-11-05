@@ -1,4 +1,4 @@
-use libc::{c_double, c_int, size_t, uint64_t};
+use libc::{c_double, c_int, size_t};
 
 // Opaque context type
 #[repr(C)]
@@ -13,9 +13,9 @@ extern "C" {
     pub fn mco_context_free(ctx: *mut mco_context_t);
     
     // Configuration
-    pub fn mco_context_set_seed(ctx: *mut mco_context_t, seed: uint64_t);
-    pub fn mco_context_set_num_simulations(ctx: *mut mco_context_t, n: uint64_t);
-    pub fn mco_context_set_num_steps(ctx: *mut mco_context_t, n: uint64_t);
+    pub fn mco_context_set_seed(ctx: *mut mco_context_t, seed: u64);
+    pub fn mco_context_set_num_simulations(ctx: *mut mco_context_t, n: u64);
+    pub fn mco_context_set_num_steps(ctx: *mut mco_context_t, n: u64);
     pub fn mco_context_set_antithetic(ctx: *mut mco_context_t, enabled: c_int);
     pub fn mco_context_set_control_variates(ctx: *mut mco_context_t, enabled: c_int);
     pub fn mco_context_set_stratified_sampling(ctx: *mut mco_context_t, enabled: c_int);

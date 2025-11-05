@@ -15,8 +15,7 @@ use anyhow::{Context, Result};
 use std::sync::Arc;
 use tonic::transport::Server;
 use tonic_web::GrpcWebLayer;
-use tower_http::cors::{Any, CorsLayer};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -72,36 +71,30 @@ async fn main() -> Result<()> {
         .context("Failed to parse server address")?;
 
     info!("gRPC server listening on {}", addr);
-    info!("gRPC-Web enabled: {}", config.server.enable_grpc_web);
-    info!("CORS enabled: {}", config.server.enable_cors);
 
-    // Build the server with optional gRPC-Web and CORS support
-    let mut server_builder = Server::builder();
-
-    // Add CORS if enabled
+    // Build server - only gRPC-Web for now (tower-http CORS has compatibility issues)
     if config.server.enable_cors {
-        let cors = CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-            .expose_headers(Any);
-        server_builder = server_builder.layer(cors);
-        info!("CORS layer added");
+        warn!("CORS via tower-http has compatibility issues - skipping for now");
+        warn!("gRPC-Web provides necessary browser support");
     }
 
-    // Add gRPC-Web if enabled
-    if config.server.enable_grpc_web {
-        server_builder = server_builder
+    let result = if config.server.enable_grpc_web {
+        info!("Enabling gRPC-Web for browser support");
+        Server::builder()
             .accept_http1(true)
-            .layer(GrpcWebLayer::new());
-        info!("gRPC-Web layer added");
-    }
-
-    // Add services and start server
-    let server = server_builder
-        .add_service(PricingServiceServer::new(pricing_service))
-        .add_service(TradingServiceServer::new(trading_service))
-        .serve(addr);
+            .layer(GrpcWebLayer::new())
+            .add_service(PricingServiceServer::new(pricing_service))
+            .add_service(TradingServiceServer::new(trading_service))
+            .serve(addr)
+            .await
+    } else {
+        info!("Running in gRPC-only mode (no browser support)");
+        Server::builder()
+            .add_service(PricingServiceServer::new(pricing_service))
+            .add_service(TradingServiceServer::new(trading_service))
+            .serve(addr)
+            .await
+    };
 
     info!("Server started successfully!");
     info!("");
@@ -111,8 +104,8 @@ async fn main() -> Result<()> {
     info!("");
     info!("Server is ready to accept connections");
 
-    // Run server
-    if let Err(e) = server.await {
+    // Handle result
+    if let Err(e) = result {
         error!("Server error: {}", e);
         return Err(e.into());
     }

@@ -1,6 +1,6 @@
 use super::protocol::*;
 use anyhow::{Context, Result};
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -17,6 +17,7 @@ pub struct MatchingConnection {
 
 /// Incoming message types
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum IncomingMessage {
     OrderAck(OrderAckMessage),
     OrderReject(OrderRejectMessage),
@@ -222,6 +223,7 @@ impl MatchingConnection {
 }
 
 /// Connection pool for managing multiple connections
+#[allow(dead_code)]
 pub struct MatchingClient {
     address: String,
     pool_size: usize,

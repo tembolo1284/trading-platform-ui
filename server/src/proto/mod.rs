@@ -17,14 +17,7 @@ pub mod pricing {
 }
 
 // Re-export commonly used types
-pub use common::{Side, OrderType, RejectReason, Timestamp};
-pub use trading::{
-    trading_service_server::{TradingService, TradingServiceServer},
-    trading_service_client::TradingServiceClient,
-    *,
-};
-pub use pricing::{
-    pricing_service_server::{PricingService, PricingServiceServer},
-    pricing_service_client::PricingServiceClient,
-    *,
-};
+pub use common::Timestamp;
+
+pub use trading::trading_service_server::{TradingService, TradingServiceServer};
+pub use pricing::pricing_service_server::{PricingService, PricingServiceServer};

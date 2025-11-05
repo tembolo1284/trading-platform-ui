@@ -1,6 +1,4 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);
-    
     // Compile all protobuf files
     tonic_build::configure()
         .build_server(true)
@@ -19,8 +17,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=../protos/trading.proto");
     println!("cargo:rerun-if-changed=../protos/pricing.proto");
     
-    // Debug: print where files are generated
-    println!("cargo:warning=Generated files in: {}", out_dir.display());
+    // Use absolute path - most reliable
+    let lib_dir = "/home/paullopez/Desktop/cpp-workspace/MonteCarloLib/lib/build";
+    
+    println!("cargo:rustc-link-search=native={}", lib_dir);
+    println!("cargo:rustc-link-lib=dylib=mcoptions");
+    println!("cargo:rerun-if-changed={}/libmcoptions.so", lib_dir);
+    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", lib_dir);
+    
+    println!("cargo:warning=Linking libmcoptions.so from: {}", lib_dir);
     
     Ok(())
 }
