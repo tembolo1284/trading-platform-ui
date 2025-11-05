@@ -1,9 +1,14 @@
+use std::path::PathBuf;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);  // ← ADD THIS LINE
+    
     // Compile all protobuf files
     tonic_build::configure()
         .build_server(true)
         .build_client(true)
         .protoc_arg("--experimental_allow_proto3_optional")
+        .file_descriptor_set_path(out_dir.join("proto_descriptor.bin"))
         .compile(
             &[
                 "../protos/common.proto",
@@ -17,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=../protos/trading.proto");
     println!("cargo:rerun-if-changed=../protos/pricing.proto");
     
-    // Use absolute path - most reliable
+    // Link the Monte Carlo library using absolute path
     let lib_dir = "/home/paullopez/Desktop/cpp-workspace/MonteCarloLib/lib/build";
     
     println!("cargo:rustc-link-search=native={}", lib_dir);

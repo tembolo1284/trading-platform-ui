@@ -15,6 +15,7 @@ use anyhow::{Context, Result};
 use std::sync::Arc;
 use tonic::transport::Server;
 use tonic_web::GrpcWebLayer;
+use tonic_reflection::server::Builder as ReflectionBuilder;
 use tracing::{error, info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -78,11 +79,27 @@ async fn main() -> Result<()> {
         warn!("gRPC-Web provides necessary browser support");
     }
 
+    // Build reflection service for grpcurl support
+    let reflection_service = ReflectionBuilder::configure()
+        .register_encoded_file_descriptor_set(tonic::include_file_descriptor_set!("proto_descriptor"))
+        .build()
+        .context("Failed to build reflection service")?;
+
+    info!("Server started successfully!");
+    info!("");
+    info!("Available services:");
+    info!("  - pricing.PricingService (Monte Carlo options pricing)");
+    info!("  - trading.TradingService (Order submission and market data)");
+    info!("  - grpc.reflection.v1alpha.ServerReflection");
+    info!("");
+    info!("Server is ready to accept connections");
+
     let result = if config.server.enable_grpc_web {
         info!("Enabling gRPC-Web for browser support");
         Server::builder()
             .accept_http1(true)
             .layer(GrpcWebLayer::new())
+            .add_service(reflection_service)
             .add_service(PricingServiceServer::new(pricing_service))
             .add_service(TradingServiceServer::new(trading_service))
             .serve(addr)
@@ -90,19 +107,12 @@ async fn main() -> Result<()> {
     } else {
         info!("Running in gRPC-only mode (no browser support)");
         Server::builder()
+            .add_service(reflection_service)
             .add_service(PricingServiceServer::new(pricing_service))
             .add_service(TradingServiceServer::new(trading_service))
             .serve(addr)
             .await
     };
-
-    info!("Server started successfully!");
-    info!("");
-    info!("Available services:");
-    info!("  - pricing.PricingService (Monte Carlo options pricing)");
-    info!("  - trading.TradingService (Order submission and market data)");
-    info!("");
-    info!("Server is ready to accept connections");
 
     // Handle result
     if let Err(e) = result {
