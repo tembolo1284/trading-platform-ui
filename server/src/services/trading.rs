@@ -78,51 +78,43 @@ impl TradingService for TradingServiceImpl {
         let order_type = Self::convert_order_type(req.order_type())?;
         let price = Self::price_to_cents(req.price);
         
-        // Submit to matching engine
-        match self
-            .matching_client
-            .submit_order(
-                req.symbol.clone(),
-                req.user_id,
-                side,
-                order_type,
-                price,
-                req.quantity,
-            )
-            .await
-        {
-            Ok(client_order_id) => {
-                info!(
-                    "Order submitted successfully: id={}, symbol={}",
-                    client_order_id, req.symbol
-                );
-                
-                Ok(Response::new(OrderResponse {
-                    client_order_id,
-                    exchange_order_id: client_order_id, // Will be updated by ack
-                    accepted: true,
-                    reject_reason: RejectReason::None as i32,
-                    error_message: String::new(),
-                    timestamp: Some(Timestamp {
-                        nanos: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
-                    }),
-                }))
+        // Generate client order ID immediately
+        let client_order_id = chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64;
+        
+        // Clone what we need for the async task
+        let matching_client = Arc::clone(&self.matching_client);
+        let symbol = req.symbol.clone();
+        let user_id = req.user_id;
+        let quantity = req.quantity;
+        
+        // Submit order asynchronously - don't wait for response
+        tokio::spawn(async move {
+            match matching_client
+                .submit_order(symbol.clone(), user_id, side, order_type, price, quantity)
+                .await
+            {
+                Ok(order_id) => {
+                    info!("Order submitted to engine: id={}, symbol={}", order_id, symbol);
+                }
+                Err(e) => {
+                    error!("Failed to submit order to engine: {}", e);
+                }
             }
-            Err(e) => {
-                error!("Failed to submit order: {}", e);
-                
-                Ok(Response::new(OrderResponse {
-                    client_order_id: 0,
-                    exchange_order_id: 0,
-                    accepted: false,
-                    reject_reason: RejectReason::SystemError as i32,
-                    error_message: e.to_string(),
-                    timestamp: Some(Timestamp {
-                        nanos: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
-                    }),
-                }))
-            }
-        }
+        });
+        
+        // Return immediately with acknowledgment
+        info!("Order accepted (async): id={}, symbol={}", client_order_id, req.symbol);
+        
+        Ok(Response::new(OrderResponse {
+            client_order_id,
+            exchange_order_id: 0, // Will be updated when gateway responds
+            accepted: true,
+            reject_reason: RejectReason::None as i32,
+            error_message: String::new(),
+            timestamp: Some(Timestamp {
+                nanos: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+            }),
+        }))
     }
     
     async fn cancel_order(
@@ -145,37 +137,34 @@ impl TradingService for TradingServiceImpl {
             return Err(Status::invalid_argument("Invalid order ID"));
         }
         
-        // Submit cancel to matching engine
-        match self
-            .matching_client
-            .cancel_order(req.symbol.clone(), req.client_order_id, req.user_id)
-            .await
-        {
-            Ok(()) => {
-                info!("Order cancelled: id={}", req.client_order_id);
-                
-                Ok(Response::new(CancelResponse {
-                    client_order_id: req.client_order_id,
-                    cancelled: true,
-                    error_message: String::new(),
-                    timestamp: Some(Timestamp {
-                        nanos: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
-                    }),
-                }))
+        // Submit cancel asynchronously
+        let matching_client = Arc::clone(&self.matching_client);
+        let symbol = req.symbol.clone();
+        let client_order_id = req.client_order_id;
+        let user_id = req.user_id;
+        
+        tokio::spawn(async move {
+            match matching_client
+                .cancel_order(symbol.clone(), client_order_id, user_id)
+                .await
+            {
+                Ok(()) => {
+                    info!("Order cancelled: id={}", client_order_id);
+                }
+                Err(e) => {
+                    error!("Failed to cancel order: {}", e);
+                }
             }
-            Err(e) => {
-                error!("Failed to cancel order: {}", e);
-                
-                Ok(Response::new(CancelResponse {
-                    client_order_id: req.client_order_id,
-                    cancelled: false,
-                    error_message: e.to_string(),
-                    timestamp: Some(Timestamp {
-                        nanos: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
-                    }),
-                }))
-            }
-        }
+        });
+        
+        Ok(Response::new(CancelResponse {
+            client_order_id: req.client_order_id,
+            cancelled: true,
+            error_message: String::new(),
+            timestamp: Some(Timestamp {
+                nanos: chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0) as u64,
+            }),
+        }))
     }
 
     // Streaming methods - stub implementations for now
@@ -191,12 +180,9 @@ impl TradingService for TradingServiceImpl {
         
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
         
-        // TODO: Implement actual streaming from matching engine
         warn!("Execution streaming not yet fully implemented");
         
-        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(
-            rx,
-        )))
+        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
     
     type StreamOrderBookStream =
@@ -211,12 +197,9 @@ impl TradingService for TradingServiceImpl {
         
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
         
-        // TODO: Implement actual streaming from matching engine
         warn!("Order book streaming not yet fully implemented");
         
-        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(
-            rx,
-        )))
+        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
     
     type StreamTradesStream = tokio_stream::wrappers::ReceiverStream<Result<TradeReport, Status>>;
@@ -230,12 +213,9 @@ impl TradingService for TradingServiceImpl {
         
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
         
-        // TODO: Implement actual streaming from matching engine
         warn!("Trade streaming not yet fully implemented");
         
-        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(
-            rx,
-        )))
+        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
     }
     
     async fn get_order_book(
@@ -248,7 +228,6 @@ impl TradingService for TradingServiceImpl {
             req.symbol, req.depth
         );
         
-        // TODO: Query matching engine for order book snapshot
         warn!("Order book query not yet implemented");
         
         Ok(Response::new(OrderBookSnapshot {
@@ -269,7 +248,6 @@ impl TradingService for TradingServiceImpl {
         let req = request.into_inner();
         debug!("Getting order status for id: {}", req.client_order_id);
         
-        // TODO: Query matching engine for order status
         warn!("Order status query not yet implemented");
         
         Err(Status::unimplemented("Order status query not yet implemented"))
